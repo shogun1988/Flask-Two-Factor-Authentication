@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     is_two_factor_authentication_enabled = db.Column(
         db.Boolean, nullable=False, default=False)
     secret_token = db.Column(db.String, unique=True)
+    password_reset_nonce = db.Column(db.String, nullable=True)
 
     def __init__(self, username, password):
         self.username = username

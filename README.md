@@ -169,5 +169,25 @@ src/
 
 ---
 
+## Tests
+Run the automated test suite (includes a dead-link crawler):
+
+```powershell
+.\venv\,Scripts\python.exe -m pytest -q
+```
+
+The dead link test requests public pages, follows redirects, extracts internal anchor hrefs, and fails if any return HTTP status >= 400.
+
+Extend coverage by adding authenticated pages: create a helper that registers + logs in a user, then seeds additional paths.
+
+Project test files:
+```
+tests/
+  conftest.py        # Pytest fixtures & temporary DB setup
+  test_dead_links.py # Crawls pages & checks for failing status codes
+```
+
+---
+
 ## License
 This project is licensed under the terms of the LICENSE file included in this repository.

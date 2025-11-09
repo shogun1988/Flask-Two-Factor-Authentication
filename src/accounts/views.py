@@ -3,6 +3,7 @@ from .forms import LoginForm, RegisterForm, TwoFactorForm, ForgotPasswordForm, R
 from src.accounts.models import User
 from src import db, bcrypt, app
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+import uuid
 from flask_login import current_user, login_required, login_user, logout_user
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
@@ -130,9 +131,17 @@ def forgot_password():
         if not user:
             flash("If the username exists, a reset link will be shown below.", "info")
             return render_template("accounts/forgot-password.html", form=form)
-        # Create a signed token with the user id
+        # Generate a single-use nonce
+        user.password_reset_nonce = str(uuid.uuid4())
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Unable to generate reset link. Please try again.", "danger")
+            return render_template("accounts/forgot-password.html", form=form)
+        # Create a signed token with the user id and nonce
         s = _get_serializer()
-        token = s.dumps({"uid": user.id})
+        token = s.dumps({"uid": user.id, "nonce": user.password_reset_nonce})
         reset_link = url_for(RESET_PASSWORD_URL, token=token, _external=True)
         # In a real app, email this link. Here we display it for demo.
         flash("Copy the reset link below to reset your password.", "success")
@@ -157,10 +166,17 @@ def reset_password(token):
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for(FORGOT_PASSWORD_URL))
+    # Enforce single-use by matching nonce
+    token_nonce = data.get("nonce")
+    if not token_nonce or token_nonce != user.password_reset_nonce:
+        flash("Reset link already used or invalid.", "danger")
+        return redirect(url_for(FORGOT_PASSWORD_URL))
 
     if form.validate_on_submit():
         try:
             user.password = bcrypt.generate_password_hash(form.password.data)
+            # Clear nonce so token cannot be reused
+            user.password_reset_nonce = None
             db.session.commit()
             flash("Password has been reset. Please login.", "success")
             return redirect(url_for("accounts.login"))

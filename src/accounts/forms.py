@@ -26,9 +26,11 @@ class RegisterForm(FlaskForm):
             return False
         user = User.query.filter_by(username=self.username.data).first()
         if user:
+            self.username.errors = list(self.username.errors)
             self.username.errors.append("Username already registered")
             return False
         if self.password.data != self.confirm.data:
+            self.password.errors = list(self.password.errors)
             self.password.errors.append("Passwords must match")
             return False
         return True

@@ -8,4 +8,6 @@ pyotp
 qrcode 
 python-decouple
 Pillow
+pytest
+beautifulsoup4
 
