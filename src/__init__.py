@@ -6,7 +6,8 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config.from_object(config("APP_SETTINGS"))
+# Load config object from environment, falling back to a sensible default for local dev
+app.config.from_object(config("APP_SETTINGS", default="config.DevelopmentConfig"))
 
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)

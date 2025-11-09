@@ -1,6 +1,7 @@
 from decouple import config
 
-DATABASE_URI = config("DATABASE_URL")
+# Provide a default SQLite database URL for local development if none is supplied
+DATABASE_URI = config("DATABASE_URL", default="sqlite:///dev.sqlite")
 if DATABASE_URI.startswith("postgres://"):
     DATABASE_URI = DATABASE_URI.replace("postgres://", "postgresql://", 1)
 
@@ -16,7 +17,8 @@ class Config(object):
     WTF_CSRF_ENABLED = True
     DEBUG_TB_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
-    APP_NAME = config("APP_NAME")
+    # Default application name for provisioning URIs if not provided
+    APP_NAME = config("APP_NAME", default="Flask2FA")
 
 
 class DevelopmentConfig(Config):
