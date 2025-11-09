@@ -33,7 +33,10 @@
             {% endif %}
         </div>
         <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-        <p class="text-center mt-3">New User? <a href="{{ url_for('accounts.register') }}">Register now</a></p>
+        <p class="text-center mt-3">
+          <a href="{{ url_for('accounts.forgot_password') }}">Forgot password?</a>
+        </p>
+        <p class="text-center mt-1">New User? <a href="{{ url_for('accounts.register') }}">Register now</a></p>
       </form>
     </main>
   </div>

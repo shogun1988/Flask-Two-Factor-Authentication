@@ -42,3 +42,20 @@ class LoginForm(FlaskForm):
 class TwoFactorForm(FlaskForm):
     otp = StringField('Enter OTP', validators=[
                       InputRequired(), Length(min=6, max=6)])
+
+
+class ForgotPasswordForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired()])
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField(
+        "New Password", validators=[DataRequired(), Length(min=6, max=25)]
+    )
+    confirm = PasswordField(
+        "Repeat password",
+        validators=[
+            DataRequired(),
+            EqualTo("password", message="Passwords must match."),
+        ],
+    )

@@ -1,7 +1,8 @@
 from src.utils import get_b64encoded_qr_image
-from .forms import LoginForm, RegisterForm, TwoFactorForm
+from .forms import LoginForm, RegisterForm, TwoFactorForm, ForgotPasswordForm, ResetPasswordForm
 from src.accounts.models import User
-from src import db, bcrypt
+from src import db, bcrypt, app
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_login import current_user, login_required, login_user, logout_user
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
@@ -10,6 +11,8 @@ accounts_bp = Blueprint("accounts", __name__)
 HOME_URL = "core.home"
 SETUP_2FA_URL = "accounts.setup_two_factor_auth"
 VERIFY_2FA_URL = "accounts.verify_two_factor_auth"
+FORGOT_PASSWORD_URL = "accounts.forgot_password"
+RESET_PASSWORD_URL = "accounts.reset_password"
 
 
 @accounts_bp.route("/register", methods=["GET", "POST"])
@@ -112,3 +115,57 @@ def verify_two_factor_auth():
             flash(
                 "You have not enabled 2-Factor Authentication. Please enable it first.", "info")
         return render_template("accounts/verify-2fa.html", form=form)
+
+
+def _get_serializer():
+    return URLSafeTimedSerializer(app.config["SECRET_KEY"])
+
+
+@accounts_bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    # Allow both authenticated and unauthenticated users to request reset by username
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if not user:
+            flash("If the username exists, a reset link will be shown below.", "info")
+            return render_template("accounts/forgot-password.html", form=form)
+        # Create a signed token with the user id
+        s = _get_serializer()
+        token = s.dumps({"uid": user.id})
+        reset_link = url_for(RESET_PASSWORD_URL, token=token, _external=True)
+        # In a real app, email this link. Here we display it for demo.
+        flash("Copy the reset link below to reset your password.", "success")
+        return render_template("accounts/forgot-password.html", form=form, reset_link=reset_link)
+    return render_template("accounts/forgot-password.html", form=form)
+
+
+@accounts_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    form = ResetPasswordForm()
+    s = _get_serializer()
+    try:
+        data = s.loads(token, max_age=3600)  # token valid for 1 hour
+    except SignatureExpired:
+        flash("Reset link expired. Please request a new one.", "danger")
+        return redirect(url_for(FORGOT_PASSWORD_URL))
+    except BadSignature:
+        flash("Invalid reset link.", "danger")
+        return redirect(url_for(FORGOT_PASSWORD_URL))
+
+    user = User.query.get(data.get("uid"))
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for(FORGOT_PASSWORD_URL))
+
+    if form.validate_on_submit():
+        try:
+            user.password = bcrypt.generate_password_hash(form.password.data)
+            db.session.commit()
+            flash("Password has been reset. Please login.", "success")
+            return redirect(url_for("accounts.login"))
+        except Exception:
+            db.session.rollback()
+            flash("Failed to reset password. Please try again.", "danger")
+
+    return render_template("accounts/reset-password.html", form=form)
