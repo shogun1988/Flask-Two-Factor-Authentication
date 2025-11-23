@@ -32,7 +32,7 @@ Original tutorial: https://www.freecodecamp.org/news/how-to-implement-two-factor
 ```powershell
 # If you haven't already cloned it, do so, then cd into it
 # git clone <this-repo-url>
-cd D:\freecodecamp\Flask-Two-Factor-Authentication
+cd D:\<PATH>\Flask-Two-Factor-Authentication
 ```
 
 2) Create and activate a virtual environment
